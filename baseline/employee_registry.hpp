@@ -1,6 +1,7 @@
 #pragma once
 
 #include "employee.hpp"
+#include "filter.hpp"
 
 #include <memory>
 #include <string>
@@ -17,7 +18,11 @@ namespace filtering
 
         static Ptr load(std::string file);
 
-        virtual std::vector<Employee> filter(const std::vector<Filter>& filters) const = 0;
+        virtual std::vector<Employee> filter(
+            const std::vector<IFilter<std::string>::Ptr>& nameFilters,
+            const std::vector<IFilter<std::string>::Ptr>& positionFilters,
+            const std::vector<IFilter<int>::Ptr>& ageFilters,
+            const std::vector<IFilter<float>::Ptr>& salaryFilters) const = 0;
         virtual void add(Employee employee) = 0;
     };
 }

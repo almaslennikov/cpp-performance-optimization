@@ -11,7 +11,11 @@ namespace filtering
     public:
         EmployeeRegistry(std::string file);
 
-        std::vector<Employee> filter(const std::vector<Filter>& filters) const override;
+        std::vector<Employee> filter(
+            const std::vector<IFilter<std::string>::Ptr>& nameFilters,
+            const std::vector<IFilter<std::string>::Ptr>& positionFilters,
+            const std::vector<IFilter<int>::Ptr>& ageFilters,
+            const std::vector<IFilter<float>::Ptr>& salaryFilters) const override;
         void add(Employee employee) override;
 
     private:
@@ -53,7 +57,11 @@ namespace filtering
         }
     }
 
-    std::vector<Employee> EmployeeRegistry::filter(const std::vector<Filter>& filters) const
+    std::vector<Employee> EmployeeRegistry::filter(
+        const std::vector<IFilter<std::string>::Ptr>& nameFilters,
+        const std::vector<IFilter<std::string>::Ptr>& positionFilters,
+        const std::vector<IFilter<int>::Ptr>& ageFilters,
+        const std::vector<IFilter<float>::Ptr>& salaryFilters) const
     {
         std::vector<Employee> result;
 
@@ -65,9 +73,21 @@ namespace filtering
         {
             bool match = true;
 
-            for (auto& filter : filters)
+            for (auto& filter : nameFilters)
             {
-                match &= filter(employee);
+                match &= filter->match(employee.name);
+            }
+            for (auto& filter : positionFilters)
+            {
+                match &= filter->match(employee.position);
+            }
+            for (auto& filter : ageFilters)
+            {
+                match &= filter->match(employee.age);
+            }
+            for (auto& filter : salaryFilters)
+            {
+                match &= filter->match(employee.salary);
             }
 
             return match;
