@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.9.1)
+project(filtering_baseline)
+set(CMAKE_CXX_COMPILER icl)
+file(GLOB SOURCES ./*.cpp ./*.hpp)
+add_executable(filtering main.cpp ${SOURCES})
+set_target_properties(filtering PROPERTIES CMAKE_CXX_STANDARD 17)
