@@ -1,5 +1,6 @@
 #include "employee_registry.hpp"
 #include "filter.hpp"
+#include "filter_loader.hpp"
 
 #include <chrono>
 #include <iostream>
@@ -8,7 +9,8 @@
 #include "ittnotify.h"
 
 __itt_domain* domain = __itt_domain_create("filtering");
-__itt_string_handle* shInitializingTask = __itt_string_handle_create("Loading data from csv");
+__itt_string_handle* shLoadingDataTask = __itt_string_handle_create("Loading data from csv");
+__itt_string_handle* shLoadingFiltersTask = __itt_string_handle_create("Loading filters from csv");
 __itt_string_handle* shFilteringTask = __itt_string_handle_create("Applying filters");
 __itt_string_handle* shFilteringSubTask = __itt_string_handle_create("Applying a filter");
 
@@ -56,9 +58,9 @@ int main(int argc, char** argv)
 {
     auto start = std::chrono::high_resolution_clock::now();
 
-    __itt_task_begin(domain, __itt_null, __itt_null, shInitializingTask);
+    __itt_task_begin(domain, __itt_null, __itt_null, shLoadingDataTask);
 
-    auto registry = IEmployeeRegistry::load("C:\\Users\\Alexander-PC\\Documents\\cppconf-piter-2019-optimization\\employees.csv");
+    auto registry = IEmployeeRegistry::load("C:\\Users\\Alexander-PC\\Documents\\cppconf-piter-2019-optimization\\employees.csv"); // TODO change
 
     __itt_task_end(domain);
 
@@ -68,45 +70,26 @@ int main(int argc, char** argv)
 
     size_t counter = 0;
     
+
+    __itt_task_begin(domain, __itt_null, __itt_null, shLoadingFiltersTask);
+
+    auto filters = loadFilters("C:\\Users\\Alexander-PC\\Documents\\cppconf-piter-2019-optimization\\filters.csv"); // TODO change
+
+    __itt_task_end(domain);
+
     __itt_task_begin(domain, __itt_null, __itt_null, shFilteringTask);
 
-    IFilter<std::string>::Ptr techPosition = 
-        std::make_shared<EqualsAnyFilter<std::string>>(std::initializer_list<std::string>({ INTERN, ENGINEER, MANAGER }));
-    IFilter<std::string>::Ptr intern = std::make_shared<EqualsFilter<std::string>>(INTERN);
-    IFilter<std::string>::Ptr servicePosition = 
-        std::make_shared<EqualsAnyFilter<std::string>>(std::initializer_list<std::string>({ HR, SECURITY, ADMINISTRATOR, JANITOR }));
-    IFilter<float>::Ptr lowIncome = std::make_shared<LessFilter<float>>(LOW_INCOME_UPPER_LIMIT);
-    IFilter<float>::Ptr highIncome = std::make_shared<GreaterFilter<float>>(HIGH_INCOME_LOWER_LIMIT);
-    IFilter<float>::Ptr greaterThanLowIncome = std::make_shared<GreaterFilter<float>>(MEDIUM_INCOME_LOWER_LIMIT);
-    IFilter<float>::Ptr lessThanHighIncome = std::make_shared<LessFilter<float>>(MEDIUM_INCOME_UPPER_LIMIT);
-    IFilter<int>::Ptr young = std::make_shared<LessFilter<int>>(YOUNG_AGE_UPPER_LIMIT);
-    IFilter<int>::Ptr senior = std::make_shared<GreaterFilter<int>>(SENIOR_AGE_LOWER_LIMIT);
-    IFilter<int>::Ptr youngerThanSenior = std::make_shared<LessFilter<int>>(MIDDLE_AGE_UPPER_LIMIT);
-    IFilter<int>::Ptr olderThanYoung = std::make_shared<GreaterFilter<int>>(MIDDLE_AGE_LOWER_LIMIT);
+    for (auto& filter : filters)
+    {
+        FilterLogger logger;
 
-    {
-        FilterLogger logger;
-        auto middleAgedInternsWithLowIncome = registry->filter({}, { intern }, { youngerThanSenior, olderThanYoung }, { lowIncome });
-    }
-    {
-        FilterLogger logger;
-        auto techEmployeesWithHighIncome = registry->filter({}, { techPosition }, {}, { highIncome });
-    }
-    {
-        FilterLogger logger;
-        auto seniorPeopleWithMediumIncome = registry->filter({}, {}, { senior }, { lessThanHighIncome, greaterThanLowIncome });
-    }
-    {
-        FilterLogger logger;
-        auto youngServicePeople = registry->filter({}, { servicePosition }, { young }, {});
-    }
-    {
-        FilterLogger logger;
-        auto peopleWithMediumIncome = registry->filter({}, {}, {}, { lessThanHighIncome, greaterThanLowIncome });
-    }
-    {
-        FilterLogger logger;
-        auto peopleWithLowIncome = registry->filter({}, {}, {}, { lowIncome });
+        auto result = registry->filter(
+            std::move(filter.nameFilters),
+            std::move(filter.positionFilters),
+            std::move(filter.ageFilters),
+            std::move(filter.salaryFilters));
+
+        std::cout << "Filtered: " << result.size() << "\n";
     }
 
     __itt_task_end(domain);

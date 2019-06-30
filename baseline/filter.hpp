@@ -31,11 +31,24 @@ namespace filtering
     class IMultiValueFilter : public IFilter<T>
     {
     public:
-        IMultiValueFilter(const std::initializer_list<T>& initializer_list)
-            : m_values(initializer_list.begin(), initializer_list.end()) {}
+        template<class Iterator>
+        IMultiValueFilter(Iterator begin, Iterator end)
+            : m_values(begin, end) {}
     protected:
         std::vector<T> m_values;
     };
+
+    template<class Filter, class T>
+    std::shared_ptr<IFilter<T>> createSingleValueFilter(const T& value)
+    {
+        return std::make_shared<Filter>(value);
+    }
+
+    template<class Filter, class T, class Iterator>
+    std::shared_ptr<IFilter<T>> createMultiValueFilter(Iterator begin, Iterator end)
+    {
+        return std::make_shared<Filter>(begin, end);
+    }
 
     template<class T>
     class EqualsFilter final : public ISingleValueFilter<T>
@@ -56,10 +69,10 @@ namespace filtering
     class EqualsAnyFilter final : public IMultiValueFilter<T>
     {
     public:
-        EqualsAnyFilter(const std::initializer_list<T>& initializer_list)
-            : IMultiValueFilter(initializer_list)
-        {
-        }
+
+        template<class Iterator>
+        EqualsAnyFilter(Iterator begin, Iterator end)
+            : IMultiValueFilter(begin, end) {}
 
         bool match(const T& value) const override
         {
