@@ -12,10 +12,10 @@ namespace filtering
         EmployeeRegistry(std::string file);
 
         std::vector<Employee> filter(
-            const std::vector<IFilter<std::string>::Ptr>& nameFilters,
-            const std::vector<IFilter<std::string>::Ptr>& positionFilters,
-            const std::vector<IFilter<int>::Ptr>& ageFilters,
-            const std::vector<IFilter<float>::Ptr>& salaryFilters) const override;
+            IFilter<std::string>::Ptr nameFilter,
+            IFilter<std::string>::Ptr positionFilter,
+            IFilter<int>::Ptr ageFilter,
+            IFilter<float>::Ptr salaryFilter) const override;
         void add(Employee employee) override;
 
     private:
@@ -58,10 +58,10 @@ namespace filtering
     }
 
     std::vector<Employee> EmployeeRegistry::filter(
-        const std::vector<IFilter<std::string>::Ptr>& nameFilters,
-        const std::vector<IFilter<std::string>::Ptr>& positionFilters,
-        const std::vector<IFilter<int>::Ptr>& ageFilters,
-        const std::vector<IFilter<float>::Ptr>& salaryFilters) const
+        IFilter<std::string>::Ptr nameFilter,
+        IFilter<std::string>::Ptr positionFilter,
+        IFilter<int>::Ptr ageFilter,
+        IFilter<float>::Ptr salaryFilter) const
     {
         std::vector<Employee> result;
 
@@ -73,21 +73,21 @@ namespace filtering
         {
             bool match = true;
 
-            for (auto& filter : nameFilters)
+            if (nameFilter)
             {
-                match &= filter->match(employee.name);
+                match &= nameFilter->match(employee.name);
             }
-            for (auto& filter : positionFilters)
+            if (positionFilter)
             {
-                match &= filter->match(employee.position);
+                match &= positionFilter->match(employee.position);
             }
-            for (auto& filter : ageFilters)
+            if (ageFilter)
             {
-                match &= filter->match(employee.age);
+                match &= ageFilter->match(employee.age);
             }
-            for (auto& filter : salaryFilters)
+            if (salaryFilter)
             {
-                match &= filter->match(employee.salary);
+                match &= salaryFilter->match(employee.salary);
             }
 
             return match;

@@ -2,18 +2,29 @@
 
 #include "filter.hpp"
 
-#include <vector>
+#include <list>
 #include <string>
+#include <variant>
+#include <unordered_map>
 
 namespace filtering
 {
-    struct GroupFilter
+    enum class Types
     {
-        std::vector<IFilter<std::string>::Ptr> nameFilters;
-        std::vector<IFilter<std::string>::Ptr> positionFilters;
-        std::vector<IFilter<int>::Ptr> ageFilters;
-        std::vector<IFilter<float>::Ptr> salaryFilters;
+        String,
+        Int,
+        Float
     };
+    using FilterType = std::variant<IFilter<std::string>::Ptr, IFilter<int>::Ptr, IFilter<float>::Ptr>;
 
-    std::vector<GroupFilter> loadFilters(std::string file);
+    class FilterLoader final
+    {
+    public:
+        FilterLoader(std::unordered_map<std::string, Types>);
+
+        std::list<std::unordered_map<std::string, FilterType>> load(std::string filepath);
+    
+    private:
+        std::unordered_map<std::string, Types> m_fields;
+    };
 }

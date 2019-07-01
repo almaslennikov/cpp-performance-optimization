@@ -18,27 +18,9 @@ using namespace filtering;
 
 size_t g_counter = 0;
 
-constexpr char INTERN[] = "Intern";
-constexpr char ENGINEER[] = "Engineer";
-constexpr char HR[] = "HR";
-constexpr char MANAGER[] = "Manager";
-constexpr char SECURITY[] = "Security";
-constexpr char ADMINISTRATOR[] = "Administrator";
-constexpr char JANITOR[] = "Janitor";
-
-constexpr int YOUNG_AGE_UPPER_LIMIT = 30;
-constexpr int MIDDLE_AGE_LOWER_LIMIT = YOUNG_AGE_UPPER_LIMIT;
-constexpr int MIDDLE_AGE_UPPER_LIMIT = 55;
-constexpr int SENIOR_AGE_LOWER_LIMIT = MIDDLE_AGE_UPPER_LIMIT;
-
-constexpr float LOW_INCOME_UPPER_LIMIT = 100000.0;
-constexpr float MEDIUM_INCOME_LOWER_LIMIT = LOW_INCOME_UPPER_LIMIT;
-constexpr float MEDIUM_INCOME_UPPER_LIMIT = 250000.0;
-constexpr float HIGH_INCOME_LOWER_LIMIT = MEDIUM_INCOME_UPPER_LIMIT;
-
 struct FilterLogger final
 {
-    FilterLogger(): start(std::chrono::high_resolution_clock::now())
+    FilterLogger() : start(std::chrono::high_resolution_clock::now())
     {
         __itt_task_begin(domain, __itt_null, __itt_null, shFilteringSubTask);
     }
@@ -69,11 +51,18 @@ int main(int argc, char** argv)
         std::chrono::duration_cast<std::chrono::milliseconds>(initializationFinish - start).count() << "ms\n";
 
     size_t counter = 0;
-    
+
 
     __itt_task_begin(domain, __itt_null, __itt_null, shLoadingFiltersTask);
 
-    auto filters = loadFilters("C:\\Users\\Alexander-PC\\Documents\\cppconf-piter-2019-optimization\\filters.csv"); // TODO change
+    FilterLoader loader({
+        {"name", Types::String},
+        {"position", Types::String},
+        {"age", Types::Int},
+        {"salary", Types::Float}
+    });
+
+    auto filters = loader.load("C:\\Users\\Alexander-PC\\Documents\\cppconf-piter-2019-optimization\\filters.csv"); // TODO change
 
     __itt_task_end(domain);
 
@@ -83,11 +72,24 @@ int main(int argc, char** argv)
     {
         FilterLogger logger;
 
+        auto nameFilterType = filter["name"];
+        IFilter<std::string>::Ptr nameFilter = 
+            std::holds_alternative<IFilter<std::string>::Ptr>(nameFilterType) ? std::get<IFilter<std::string>::Ptr>(nameFilterType) : nullptr;
+        auto positionFilterType = filter["position"];
+        IFilter<std::string>::Ptr positionFilter = 
+            std::holds_alternative<IFilter<std::string>::Ptr>(positionFilterType) ? std::get<IFilter<std::string>::Ptr>(positionFilterType) : nullptr;
+        auto ageFilterType = filter["age"];
+        IFilter<int>::Ptr ageFilter =
+            std::holds_alternative<IFilter<int>::Ptr>(ageFilterType) ? std::get<IFilter<int>::Ptr>(ageFilterType) : nullptr;
+        auto salaryFilterType = filter["salary"];
+        IFilter<float>::Ptr salaryFilter =
+            std::holds_alternative<IFilter<float>::Ptr>(salaryFilterType) ? std::get<IFilter<float>::Ptr>(salaryFilterType) : nullptr;
+
         auto result = registry->filter(
-            std::move(filter.nameFilters),
-            std::move(filter.positionFilters),
-            std::move(filter.ageFilters),
-            std::move(filter.salaryFilters));
+            std::move(nameFilter),
+            std::move(positionFilter),
+            std::move(ageFilter),
+            std::move(salaryFilter));
 
         std::cout << "Filtered: " << result.size() << "\n";
     }

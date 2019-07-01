@@ -18,70 +18,74 @@ namespace filtering
     };
 
     template<class T>
+    class IGroupFilter : public IFilter<T>
+    {
+    public:
+        IGroupFilter(std::initializer_list<IFilter<T>::Ptr> filters)
+            : m_filters{filters} {}
+
+    protected:
+        std::vector<IFilter<T>::Ptr> m_filters;
+    };
+
+
+    template<class T>
+    class AnyFilter final : public IGroupFilter<T>
+    {
+    public:
+        AnyFilter(std::initializer_list<IFilter<T>::Ptr> filters)
+            : IGroupFilter(filters) {}
+
+        bool match(const T& value) const
+        {
+            bool res = false;
+            for (const auto& filter : m_filters)
+            {
+                res |= filter->match(value);
+            }
+            return res;
+        }
+    };
+
+    template<class T>
+    class AllFilter final : public IGroupFilter<T>
+    {
+    public:
+        AllFilter(std::initializer_list<IFilter<T>::Ptr> filters)
+            : IGroupFilter(filters) {}
+
+        bool match(const T& value) const
+        {
+            bool res = false;
+            for (const auto& filter : m_filters)
+            {
+                res &= filter->match(value);
+            }
+            return res;
+        }
+    };
+
+    template<class T>
     class ISingleValueFilter : public IFilter<T>
     {
     public:
         ISingleValueFilter(const T& value)
-            : m_value(value) {}
+            : IFilter(), m_value{ value } {}
+
     protected:
         T m_value;
     };
-
-    template<class T>
-    class IMultiValueFilter : public IFilter<T>
-    {
-    public:
-        template<class Iterator>
-        IMultiValueFilter(Iterator begin, Iterator end)
-            : m_values(begin, end) {}
-    protected:
-        std::vector<T> m_values;
-    };
-
-    template<class Filter, class T>
-    std::shared_ptr<IFilter<T>> createSingleValueFilter(const T& value)
-    {
-        return std::make_shared<Filter>(value);
-    }
-
-    template<class Filter, class T, class Iterator>
-    std::shared_ptr<IFilter<T>> createMultiValueFilter(Iterator begin, Iterator end)
-    {
-        return std::make_shared<Filter>(begin, end);
-    }
 
     template<class T>
     class EqualsFilter final : public ISingleValueFilter<T>
     {
     public:
         EqualsFilter(const T& value)
-            : ISingleValueFilter(value)
-        {
-        }
+            : ISingleValueFilter(value) {}
 
         bool match(const T& value) const override
         {
             return value == m_value;
-        }
-    };
-
-    template<class T>
-    class EqualsAnyFilter final : public IMultiValueFilter<T>
-    {
-    public:
-
-        template<class Iterator>
-        EqualsAnyFilter(Iterator begin, Iterator end)
-            : IMultiValueFilter(begin, end) {}
-
-        bool match(const T& value) const override
-        {
-            bool result = false;
-            for (auto& predicateValue : m_values)
-            {
-                result |= value == predicateValue;
-            }
-            return result;
         }
     };
 
@@ -90,34 +94,20 @@ namespace filtering
     {
     public:
         NotEqualsFilter(const T& value)
-            : ISingleValueFilter(value)
-        {
-        }
+            : ISingleValueFilter(value) {}
 
         bool match(const T& value) const override
         {
-            return value == m_value;
+            return value != m_value;
         }
     };
 
     template<class T>
-    class IArithmeticFilter : public ISingleValueFilter<T>
-    {
-    public:
-        IArithmeticFilter(const T& value)
-            : ISingleValueFilter(value)
-        {
-        }
-    };
-
-    template<class T>
-    class GreaterFilter final : public IArithmeticFilter<T>
+    class GreaterFilter final : public ISingleValueFilter<T>
     {
     public:
         GreaterFilter(const T& value)
-            : IArithmeticFilter(value)
-        {
-        }
+            : ISingleValueFilter(value) {}
 
         bool match(const T& value) const override
         {
@@ -126,13 +116,11 @@ namespace filtering
     };
 
     template<class T>
-    class LessFilter final : public IArithmeticFilter<T>
+    class LessFilter final : public ISingleValueFilter<T>
     {
     public:
         LessFilter(const T& value)
-            : IArithmeticFilter(value)
-        {
-        }
+            : ISingleValueFilter(value) {}
 
         bool match(const T& value) const override
         {
