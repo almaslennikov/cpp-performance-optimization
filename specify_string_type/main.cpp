@@ -5,6 +5,7 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <array>
 
 #include "ittnotify.h"
 
@@ -75,11 +76,11 @@ int main(int argc, char** argv)
             FilterLogger logger;
 
             auto nameFilterType = filter["name"];
-            IFilter<std::string>::Ptr nameFilter =
-                std::holds_alternative<IFilter<std::string>::Ptr>(nameFilterType) ? std::get<IFilter<std::string>::Ptr>(nameFilterType) : nullptr;
+            IFilter<std::array<char, 32>>::Ptr nameFilter =
+                std::holds_alternative<IFilter<std::array<char, 32>>::Ptr>(nameFilterType) ? std::get<IFilter<std::array<char, 32>>::Ptr>(nameFilterType) : nullptr;
             auto positionFilterType = filter["position"];
-            IFilter<std::string>::Ptr positionFilter =
-                std::holds_alternative<IFilter<std::string>::Ptr>(positionFilterType) ? std::get<IFilter<std::string>::Ptr>(positionFilterType) : nullptr;
+            IFilter<std::array<char, 32>>::Ptr positionFilter =
+                std::holds_alternative<IFilter<std::array<char, 32>>::Ptr>(positionFilterType) ? std::get<IFilter<std::array<char, 32>>::Ptr>(positionFilterType) : nullptr;
             auto ageFilterType = filter["age"];
             IFilter<int>::Ptr ageFilter =
                 std::holds_alternative<IFilter<int>::Ptr>(ageFilterType) ? std::get<IFilter<int>::Ptr>(ageFilterType) : nullptr;

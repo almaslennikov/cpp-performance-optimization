@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <array>
 
 namespace filtering
 {
@@ -12,9 +13,12 @@ namespace filtering
     }
 
     template<>
-    std::string parseString(std::string str)
+    std::array<char, 32> parseString(std::string str)
     {
-        return str;
+        std::array<char, 32> result;
+        result.fill(0);
+        std::move(std::begin(str), str.size() < 32 ? str.end() : std::begin(str) + 32, result.begin());
+        return result;
     }
 
     template<>
@@ -117,7 +121,7 @@ namespace filtering
                             }
                             else if (type == Types::String)
                             {
-                                filter = parseFilter<std::string>(cell);
+                                filter = parseFilter<std::array<char, 32>>(cell);
                             }
                             query[fieldName] = filter;
                         }
