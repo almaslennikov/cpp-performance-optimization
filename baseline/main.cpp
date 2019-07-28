@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 
     __itt_task_begin(domain, __itt_null, __itt_null, shLoadingDataTask);
 
-    auto registry = IEmployeeRegistry::load("C:\\Users\\Alexander-PC\\Documents\\cppconf-piter-2019-optimization\\employees.csv"); // TODO change
+    auto registry = IEmployeeRegistry::load("C:\\Users\\Alexander-PC\\Documents\\cppconf-piter-2019-optimization\\employees1.csv"); // TODO change
 
     __itt_task_end(domain);
 

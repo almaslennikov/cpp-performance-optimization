@@ -11,7 +11,7 @@ namespace filtering
     public:
         EmployeeRegistry(std::string file);
 
-        std::vector<Employee> filter(
+        std::vector<size_t> filter(
             IFilter<std::string>::Ptr nameFilter,
             IFilter<std::string>::Ptr positionFilter,
             IFilter<int>::Ptr ageFilter,
@@ -57,41 +57,41 @@ namespace filtering
         }
     }
 
-    std::vector<Employee> EmployeeRegistry::filter(
+    std::vector<size_t> EmployeeRegistry::filter(
         IFilter<std::string>::Ptr nameFilter,
         IFilter<std::string>::Ptr positionFilter,
         IFilter<int>::Ptr ageFilter,
         IFilter<float>::Ptr salaryFilter) const
     {
-        std::vector<Employee> result;
+        std::vector<size_t> result;
+        result.reserve(m_employees.size());
 
-        std::copy_if(
-            m_employees.begin(),
-            m_employees.end(),
-            std::back_inserter(result),
-            [&](const Employee& employee)
+        for (size_t i = 0; i < m_employees.size(); i++)
         {
             bool match = true;
 
             if (nameFilter)
             {
-                match &= nameFilter->match(employee.name);
+                match &= nameFilter->match(m_employees[i].name);
             }
             if (positionFilter)
             {
-                match &= positionFilter->match(employee.position);
+                match &= positionFilter->match(m_employees[i].position);
             }
             if (ageFilter)
             {
-                match &= ageFilter->match(employee.age);
+                match &= ageFilter->match(m_employees[i].age);
             }
             if (salaryFilter)
             {
-                match &= salaryFilter->match(employee.salary);
+                match &= salaryFilter->match(m_employees[i].salary);
             }
 
-            return match;
-        });
+            if (match)
+            {
+                result.push_back(i);
+            }
+        }
 
         return result;
     }
