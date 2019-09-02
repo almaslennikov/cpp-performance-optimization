@@ -72,7 +72,7 @@ namespace filtering
         IFilter<int>::Ptr ageFilter,
         IFilter<float>::Ptr salaryFilter) const
     {
-        std::vector<bool> matched(m_names.size(), true);
+        std::vector<char> matched(m_names.size(), 1);
 
         if (nameFilter)
         {

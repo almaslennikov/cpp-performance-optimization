@@ -4,13 +4,15 @@
 #include <memory>
 #include <vector>
 #include <array>
+#include <iostream>
 
 namespace filtering
 {
     template<class T, class Filter>
-    void match(const std::vector<T>& values, std::vector<bool>& result, Filter filter)
+    void match(const std::vector<T>& values, std::vector<char>& result, Filter filter)
     {
         int mainLoop = values.size() / 8; //TODO calculate correct delimeter (based on uarch)
+        int matched = 0;
 #pragma ivdep
 #pragma vector always
         for (int i = 0; i < mainLoop * 8; i++) //Maybe make a point about having signed counter
@@ -25,26 +27,22 @@ namespace filtering
     }
 
     template<class Filter>
-    void match<std::array<char, 32>, Filter>(const std::vector<std::array<char, 32>>& values, std::vector<bool>& result, Filter filter)
+    void match<std::array<char, 32>, Filter>(const std::vector<std::array<char, 32>>& values, std::vector<char>& result, Filter filter)
     {
         const char* p_values = reinterpret_cast<const char*>(values.data());
         int counter = 0;
         int mainLoop = values.size() / 8; //TODO calculate correct delimeter (based on uarch)
-        for (int i = 0; i < values.size() * 32; i += 32, counter++)
-        {
-            result[counter] = result[counter] & filter(p_values + i);
-        }
 //#pragma ivdep
 //#pragma vector always
 //        for (int i = 0; i < mainLoop * 8 * 32; i += 32, counter++) //Maybe make a point about having signed counter
 //        {
 //            result[counter] = result[counter] & filter(p_values + i);
 //        }
-//
-//        for (int i = mainLoop * 8 * 32; i < values.size() * 32; i += 32, counter++) //Process remainder scalar
-//        {
-//            result[counter] = result[counter] & filter(p_values + i);
-//        }
+
+        for (int i = 0; i < values.size() * 32; i += 32, counter++) //Process remainder scalar
+        {
+            result[counter] = result[counter] & filter(p_values + i);
+        }
     }
 
     template<class T>
@@ -55,7 +53,7 @@ namespace filtering
 
         virtual ~IFilter() = default;
 
-        virtual void match(const std::vector<T>& values, std::vector<bool>& result) const = 0;
+        virtual void match(const std::vector<T>& values, std::vector<char>& result) const = 0;
     };
 
     template<class T>
@@ -88,7 +86,7 @@ namespace filtering
         EqualsFilter(const T& value)
             : ISingleValueFilter(value) {}
 
-        void match(const std::vector<T>& values, std::vector<bool>& result) const override
+        void match(const std::vector<T>& values, std::vector<char>& result) const override
         {
             filtering::match(values, result, [this](auto value)
             {
@@ -104,20 +102,22 @@ namespace filtering
         EqualsFilter(const std::array<char, 32>& value)
             : ISingleValueFilter(value) {}
 
-        void match(const std::vector<std::array<char, 32>>& values, std::vector<bool>& result) const override
+        void match(const std::vector<std::array<char, 32>>& values, std::vector<char>& result) const override
         {
             filtering::match(values, result, [this](auto value)
             {
+                bool result = true;
 #pragma ivdep
 #pragma vector always
                 for (int i = 0; i < 32; i++)
                 {
                     if (value[i] != m_value[i])
                     {
-                        return false;
+                        result = false;
                     }
                 }
-                return true;
+
+                return result;
             });
         }
     };
@@ -129,7 +129,7 @@ namespace filtering
         NotEqualsFilter(const T& value)
             : ISingleValueFilter(value) {}
 
-        void match(const std::vector<T>& values, std::vector<bool>& result) const override
+        void match(const std::vector<T>& values, std::vector<char>& result) const override
         {
             filtering::match(values, result, [this](auto value)
             {
@@ -145,21 +145,22 @@ namespace filtering
         NotEqualsFilter(const std::array<char, 32>& value)
             : ISingleValueFilter(value) {}
 
-        void match(const std::vector<std::array<char, 32>>& values, std::vector<bool>& result) const override
+        void match(const std::vector<std::array<char, 32>>& values, std::vector<char>& result) const override
         {
             filtering::match(values, result, [this](auto value)
             {
+                bool result = false;
 #pragma ivdep
 #pragma vector always
                 for (int i = 0; i < 32; i++)
                 {
                     if (value[i] != m_value[i])
                     {
-                        return true;
+                        result = true;
                     }
                 }
 
-                return false;
+                return result;
             });
         }
     };
@@ -171,7 +172,7 @@ namespace filtering
         GreaterFilter(const T& value)
             : ISingleValueFilter(value) {}
 
-        void match(const std::vector<T>& values, std::vector<bool>& result) const override
+        void match(const std::vector<T>& values, std::vector<char>& result) const override
         {
             filtering::match(values, result, [this](auto value)
             {
@@ -187,7 +188,7 @@ namespace filtering
         GreaterOrEqualsFilter(const T& value)
             : ISingleValueFilter(value) {}
 
-        void match(const std::vector<T>& values, std::vector<bool>& result) const override
+        void match(const std::vector<T>& values, std::vector<char>& result) const override
         {
             filtering::match(values, result, [this](auto value)
             {
@@ -203,7 +204,7 @@ namespace filtering
         LessFilter(const T& value)
             : ISingleValueFilter(value) {}
 
-        void match(const std::vector<T>& values, std::vector<bool>& result) const override
+        void match(const std::vector<T>& values, std::vector<char>& result) const override
         {
             filtering::match(values, result, [this](auto value)
             {
@@ -219,7 +220,7 @@ namespace filtering
         LessOrEqualsFilter(const T& value)
             : ISingleValueFilter(value) {}
 
-        void match(const std::vector<T>& values, std::vector<bool>& result) const override
+        void match(const std::vector<T>& values, std::vector<char>& result) const override
         {
             filtering::match(values, result, [this](auto value)
             {
