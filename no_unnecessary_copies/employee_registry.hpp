@@ -17,7 +17,7 @@ namespace filtering
 
         static Ptr load(std::string file);
 
-        virtual std::vector<Employee> filter(
+        virtual std::vector<size_t> filter(
             IFilter<std::string>::Ptr nameFilter,
             IFilter<std::string>::Ptr positionFilter,
             IFilter<int>::Ptr ageFilter,

@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 3.9.1)
 project(filtering_baseline)
-set(CMAKE_CXX_COMPILER icl)
+
 file(GLOB SOURCES ./*.cpp ./*.hpp)
+
 add_executable(baseline main.cpp ${SOURCES})
+
 set_target_properties(baseline PROPERTIES CXX_STANDARD 17)
-target_link_libraries(baseline ${VTUNE_AMPLIFIER_PATH}/lib64/libittnotify.lib)
-target_include_directories(baseline PRIVATE ${VTUNE_AMPLIFIER_PATH}/include)
+
+target_link_libraries(baseline PRIVATE ${Ittnotity_LIBRARIES})
+target_include_directories(baseline PRIVATE ${Ittnotity_INCLUDE_DIRS})
