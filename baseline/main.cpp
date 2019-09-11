@@ -33,7 +33,7 @@ struct FilterLogger final
             std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms\n";
     }
 
-    std::chrono::time_point<std::chrono::steady_clock> start;
+    std::chrono::time_point<std::chrono::high_resolution_clock> start;
 };
 
 int main(int argc, char** argv)

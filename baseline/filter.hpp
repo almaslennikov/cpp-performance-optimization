@@ -21,11 +21,11 @@ namespace filtering
     class IGroupFilter : public IFilter<T>
     {
     public:
-        IGroupFilter(std::initializer_list<IFilter<T>::Ptr> filters)
+        IGroupFilter(std::initializer_list<typename IFilter<T>::Ptr> filters)
             : m_filters{filters} {}
 
     protected:
-        std::vector<IFilter<T>::Ptr> m_filters;
+        std::vector<typename IFilter<T>::Ptr> m_filters;
     };
 
 
@@ -33,13 +33,13 @@ namespace filtering
     class AnyFilter final : public IGroupFilter<T>
     {
     public:
-        AnyFilter(std::initializer_list<IFilter<T>::Ptr> filters)
-            : IGroupFilter(filters) {}
+        AnyFilter(std::initializer_list<typename IFilter<T>::Ptr> filters)
+            : IGroupFilter<T>(filters) {}
 
         bool match(const T& value) const
         {
             bool res = false;
-            for (const auto& filter : m_filters)
+            for (const auto& filter : IGroupFilter<T>::m_filters)
             {
                 res |= filter->match(value);
             }
@@ -51,8 +51,8 @@ namespace filtering
     class AllFilter final : public IGroupFilter<T>
     {
     public:
-        AllFilter(std::initializer_list<IFilter<T>::Ptr> filters)
-            : IGroupFilter(filters) {}
+        AllFilter(std::initializer_list<typename IFilter<T>::Ptr> filters)
+            : IGroupFilter<T>(filters) {}
 
         bool match(const T& value) const
         {
@@ -70,7 +70,7 @@ namespace filtering
     {
     public:
         ISingleValueFilter(const T& value)
-            : IFilter(), m_value{ value } {}
+            : IFilter<T>(), m_value{ value } {}
 
     protected:
         T m_value;
@@ -81,11 +81,11 @@ namespace filtering
     {
     public:
         EqualsFilter(const T& value)
-            : ISingleValueFilter(value) {}
+            : ISingleValueFilter<T>(value) {}
 
         bool match(const T& value) const override
         {
-            return value == m_value;
+            return value == ISingleValueFilter<T>::m_value;
         }
     };
 
@@ -94,11 +94,11 @@ namespace filtering
     {
     public:
         NotEqualsFilter(const T& value)
-            : ISingleValueFilter(value) {}
+            : ISingleValueFilter<T>(value) {}
 
         bool match(const T& value) const override
         {
-            return value != m_value;
+            return value != ISingleValueFilter<T>::m_value;
         }
     };
 
@@ -107,11 +107,11 @@ namespace filtering
     {
     public:
         GreaterFilter(const T& value)
-            : ISingleValueFilter(value) {}
+            : ISingleValueFilter<T>(value) {}
 
         bool match(const T& value) const override
         {
-            return value > m_value;
+            return value > ISingleValueFilter<T>::m_value;
         }
     };
 
@@ -120,11 +120,11 @@ namespace filtering
     {
     public:
         LessFilter(const T& value)
-            : ISingleValueFilter(value) {}
+            : ISingleValueFilter<T>(value) {}
 
         bool match(const T& value) const override
         {
-            return value < m_value;
+            return value < ISingleValueFilter<T>::m_value;
         }
     };
 
