@@ -11,16 +11,10 @@ namespace filtering
     template<class T, class Filter>
     void match(const std::vector<T>& values, std::vector<char>& result, Filter filter)
     {
-        int mainLoop = values.size() / 8; //TODO calculate correct delimeter (based on uarch)
-        int matched = 0;
+        const int valuesSize = values.size();
 #pragma ivdep
 #pragma vector always
-        for (int i = 0; i < mainLoop * 8; i++) //Maybe make a point about having signed counter
-        {
-            result[i] = result[i] & filter(values[i]);
-        }
-
-        for (int i = mainLoop * 8; i < values.size(); i++) //Process remainder scalar
+        for (int i = 0; i < valuesSize; i++)
         {
             result[i] = result[i] & filter(values[i]);
         }
@@ -29,19 +23,13 @@ namespace filtering
     template<class Filter>
     void match<std::array<char, 32>, Filter>(const std::vector<std::array<char, 32>>& values, std::vector<char>& result, Filter filter)
     {
-        const char* p_values = reinterpret_cast<const char*>(values.data());
+        const char* pValues = reinterpret_cast<const char*>(values.data());
         int counter = 0;
-        int mainLoop = values.size() / 8; //TODO calculate correct delimeter (based on uarch)
-//#pragma ivdep
-//#pragma vector always
-//        for (int i = 0; i < mainLoop * 8 * 32; i += 32, counter++) //Maybe make a point about having signed counter
-//        {
-//            result[counter] = result[counter] & filter(p_values + i);
-//        }
-
-        for (int i = 0; i < values.size() * 32; i += 32, counter++) //Process remainder scalar
+        const int valuesSize = values.size();
+        // Inner loop is already vectorized, no need for #pragma vector here
+        for (int i = 0; i < valuesSize * 32; i += 32, counter++)
         {
-            result[counter] = result[counter] & filter(p_values + i);
+            result[counter] = result[counter] & filter(pValues + i);
         }
     }
 

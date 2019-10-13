@@ -68,30 +68,33 @@ int main(int argc, char** argv)
 
     __itt_task_begin(domain, __itt_null, __itt_null, shFilteringTask);
 
-    for (auto& filter : filters)
+    for (int i = 0; i < 10; i++)
     {
-        FilterLogger logger;
+        for (auto& filter : filters)
+        {
+            FilterLogger logger;
 
-        auto nameFilterType = filter["name"];
-        IFilter<std::string>::Ptr nameFilter = 
-            std::holds_alternative<IFilter<std::string>::Ptr>(nameFilterType) ? std::get<IFilter<std::string>::Ptr>(nameFilterType) : nullptr;
-        auto positionFilterType = filter["position"];
-        IFilter<std::string>::Ptr positionFilter = 
-            std::holds_alternative<IFilter<std::string>::Ptr>(positionFilterType) ? std::get<IFilter<std::string>::Ptr>(positionFilterType) : nullptr;
-        auto ageFilterType = filter["age"];
-        IFilter<int>::Ptr ageFilter =
-            std::holds_alternative<IFilter<int>::Ptr>(ageFilterType) ? std::get<IFilter<int>::Ptr>(ageFilterType) : nullptr;
-        auto salaryFilterType = filter["salary"];
-        IFilter<float>::Ptr salaryFilter =
-            std::holds_alternative<IFilter<float>::Ptr>(salaryFilterType) ? std::get<IFilter<float>::Ptr>(salaryFilterType) : nullptr;
+            auto nameFilterType = filter["name"];
+            IFilter<std::string>::Ptr nameFilter =
+                std::holds_alternative<IFilter<std::string>::Ptr>(nameFilterType) ? std::get<IFilter<std::string>::Ptr>(nameFilterType) : nullptr;
+            auto positionFilterType = filter["position"];
+            IFilter<std::string>::Ptr positionFilter =
+                std::holds_alternative<IFilter<std::string>::Ptr>(positionFilterType) ? std::get<IFilter<std::string>::Ptr>(positionFilterType) : nullptr;
+            auto ageFilterType = filter["age"];
+            IFilter<int>::Ptr ageFilter =
+                std::holds_alternative<IFilter<int>::Ptr>(ageFilterType) ? std::get<IFilter<int>::Ptr>(ageFilterType) : nullptr;
+            auto salaryFilterType = filter["salary"];
+            IFilter<float>::Ptr salaryFilter =
+                std::holds_alternative<IFilter<float>::Ptr>(salaryFilterType) ? std::get<IFilter<float>::Ptr>(salaryFilterType) : nullptr;
 
-        auto result = registry->filter(
-            std::move(nameFilter),
-            std::move(positionFilter),
-            std::move(ageFilter),
-            std::move(salaryFilter));
+            auto result = registry->filter(
+                std::move(nameFilter),
+                std::move(positionFilter),
+                std::move(ageFilter),
+                std::move(salaryFilter));
 
-        std::cout << "Filtered: " << result.size() << "\n";
+            std::cout << "Filtered: " << result.size() << "\n";
+        }
     }
 
     __itt_task_end(domain);
