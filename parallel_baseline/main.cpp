@@ -5,7 +5,6 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
-#include <array>
 
 #include "ittnotify.h"
 
@@ -31,7 +30,7 @@ struct FilterLogger final
         __itt_task_end(domain);
         auto end = std::chrono::high_resolution_clock::now();
         std::cout << "Filter " << ++g_counter << " finished. Time: " <<
-           std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms\n";
+            std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << "ms\n";
     }
 
     std::chrono::time_point<std::chrono::steady_clock> start;
@@ -42,7 +41,7 @@ int main(int argc, char** argv)
     std::string employeesCsv, filtersCsv;
     if (argc == 2 && (argv[1] == "-h" || argv[1] == "--help"))
     {
-        std::cout << "Usage: 'vectorize <path_to_employees.csv> <path_to_filters.csv>'\n";
+        std::cout << "Usage: 'parallel_baseline <path_to_employees.csv> <path_to_filters.csv>'\n";
         return 0;
     }
     else if (argc == 3)
@@ -52,7 +51,7 @@ int main(int argc, char** argv)
     }
     else
     {
-        std::cout << "Incorrect command line parameters. Execute 'vectorize --help' for details.\n";
+        std::cout << "Incorrect command line parameters. Execute 'parallel_baseline --help' for details.\n";
         return 2;
     }
 
@@ -86,6 +85,7 @@ int main(int argc, char** argv)
 
     __itt_task_begin(domain, __itt_null, __itt_null, shFilteringTask);
 
+#pragma omp parallel for
     for (int i = 0; i < 10; i++)
     {
         for (auto& filter : filters)
@@ -93,11 +93,11 @@ int main(int argc, char** argv)
             FilterLogger logger;
 
             auto nameFilterType = filter["name"];
-            IFilter<std::array<char, 32>>::Ptr nameFilter =
-                std::holds_alternative<IFilter<std::array<char, 32>>::Ptr>(nameFilterType) ? std::get<IFilter<std::array<char, 32>>::Ptr>(nameFilterType) : nullptr;
+            IFilter<std::string>::Ptr nameFilter =
+                std::holds_alternative<IFilter<std::string>::Ptr>(nameFilterType) ? std::get<IFilter<std::string>::Ptr>(nameFilterType) : nullptr;
             auto positionFilterType = filter["position"];
-            IFilter<std::array<char, 32>>::Ptr positionFilter =
-                std::holds_alternative<IFilter<std::array<char, 32>>::Ptr>(positionFilterType) ? std::get<IFilter<std::array<char, 32>>::Ptr>(positionFilterType) : nullptr;
+            IFilter<std::string>::Ptr positionFilter =
+                std::holds_alternative<IFilter<std::string>::Ptr>(positionFilterType) ? std::get<IFilter<std::string>::Ptr>(positionFilterType) : nullptr;
             auto ageFilterType = filter["age"];
             IFilter<int>::Ptr ageFilter =
                 std::holds_alternative<IFilter<int>::Ptr>(ageFilterType) ? std::get<IFilter<int>::Ptr>(ageFilterType) : nullptr;

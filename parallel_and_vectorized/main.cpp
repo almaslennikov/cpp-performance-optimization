@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     std::string employeesCsv, filtersCsv;
     if (argc == 2 && (argv[1] == "-h" || argv[1] == "--help"))
     {
-        std::cout << "Usage: 'vectorize <path_to_employees.csv> <path_to_filters.csv>'\n";
+        std::cout << "Usage: 'parallel_and_vectorized <path_to_employees.csv> <path_to_filters.csv>'\n";
         return 0;
     }
     else if (argc == 3)
@@ -52,7 +52,7 @@ int main(int argc, char** argv)
     }
     else
     {
-        std::cout << "Incorrect command line parameters. Execute 'vectorize --help' for details.\n";
+        std::cout << "Incorrect command line parameters. Execute 'parallel_and_vectorized --help' for details.\n";
         return 2;
     }
 
@@ -86,7 +86,8 @@ int main(int argc, char** argv)
 
     __itt_task_begin(domain, __itt_null, __itt_null, shFilteringTask);
 
-    for (int i = 0; i < 10; i++)
+#pragma omp parallel for
+    for (int i = 0; i < 50; i++)
     {
         for (auto& filter : filters)
         {

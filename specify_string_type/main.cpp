@@ -39,11 +39,28 @@ struct FilterLogger final
 
 int main(int argc, char** argv)
 {
+    std::string employeesCsv, filtersCsv;
+    if (argc == 2 && (argv[1] == "-h" || argv[1] == "--help"))
+    {
+        std::cout << "Usage: 'specify_string_type <path_to_employees.csv> <path_to_filters.csv>'\n";
+        return 0;
+    }
+    else if (argc == 3)
+    {
+        employeesCsv = argv[1];
+        filtersCsv = argv[2];
+    }
+    else
+    {
+        std::cout << "Incorrect command line parameters. Execute 'specify_string_type --help' for details.\n";
+        return 2;
+    }
+
     auto start = std::chrono::high_resolution_clock::now();
 
     __itt_task_begin(domain, __itt_null, __itt_null, shLoadingDataTask);
 
-    auto registry = IEmployeeRegistry::load("C:\\Users\\Alexander-PC\\Documents\\cppconf-piter-2019-optimization\\employees1.csv"); // TODO change
+    auto registry = IEmployeeRegistry::load(employeesCsv);
 
     __itt_task_end(domain);
 
@@ -63,7 +80,7 @@ int main(int argc, char** argv)
         {"salary", Types::Float}
     });
 
-    auto filters = loader.load("C:\\Users\\Alexander-PC\\Documents\\cppconf-piter-2019-optimization\\filters.csv"); // TODO change
+    auto filters = loader.load(filtersCsv);
 
     __itt_task_end(domain);
 
