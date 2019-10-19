@@ -2,6 +2,9 @@
 #include "filter.hpp"
 #include "filter_loader.hpp"
 
+#include <tbb/task_scheduler_init.h>
+#include <tbb/task_group.h>
+
 #include <chrono>
 #include <iostream>
 #include <memory>
@@ -39,6 +42,7 @@ struct FilterLogger final
 
 int main(int argc, char** argv)
 {
+    tbb::task_scheduler_init();
     std::string employeesCsv, filtersCsv;
     if (argc == 2 && (argv[1] == "-h" || argv[1] == "--help"))
     {
@@ -86,35 +90,64 @@ int main(int argc, char** argv)
 
     __itt_task_begin(domain, __itt_null, __itt_null, shFilteringTask);
 
-#pragma omp parallel for
-    for (int i = 0; i < 50; i++)
+    tbb::task_group group;
+
+    for (int i = 0; i < 10; i++)
     {
-        for (auto& filter : filters)
+        for (auto filter : filters)
         {
-            FilterLogger logger;
+            group.run([filter, &registry]
+            {
+                FilterLogger logger;
 
-            auto nameFilterType = filter["name"];
-            IFilter<std::array<char, 32>>::Ptr nameFilter =
-                std::holds_alternative<IFilter<std::array<char, 32>>::Ptr>(nameFilterType) ? std::get<IFilter<std::array<char, 32>>::Ptr>(nameFilterType) : nullptr;
-            auto positionFilterType = filter["position"];
-            IFilter<std::array<char, 32>>::Ptr positionFilter =
-                std::holds_alternative<IFilter<std::array<char, 32>>::Ptr>(positionFilterType) ? std::get<IFilter<std::array<char, 32>>::Ptr>(positionFilterType) : nullptr;
-            auto ageFilterType = filter["age"];
-            IFilter<int>::Ptr ageFilter =
-                std::holds_alternative<IFilter<int>::Ptr>(ageFilterType) ? std::get<IFilter<int>::Ptr>(ageFilterType) : nullptr;
-            auto salaryFilterType = filter["salary"];
-            IFilter<float>::Ptr salaryFilter =
-                std::holds_alternative<IFilter<float>::Ptr>(salaryFilterType) ? std::get<IFilter<float>::Ptr>(salaryFilterType) : nullptr;
+                IFilter<std::array<char, 32>>::Ptr nameFilter = nullptr;
+                auto nameFilterIt = filter.find("name");
+                if (nameFilterIt != filter.end())
+                {
+                    nameFilter = std::holds_alternative<IFilter<std::array<char, 32>>::Ptr>(nameFilterIt->second) 
+                        ? std::get<IFilter<std::array<char, 32>>::Ptr>(nameFilterIt->second)
+                        : nullptr;
+                }
 
-            auto result = registry->filter(
-                std::move(nameFilter),
-                std::move(positionFilter),
-                std::move(ageFilter),
-                std::move(salaryFilter));
+                IFilter<std::array<char, 32>>::Ptr positionFilter = nullptr;
+                auto positionFilterIt = filter.find("position");
+                if (positionFilterIt != filter.end())
+                {
+                    positionFilter = std::holds_alternative<IFilter<std::array<char, 32>>::Ptr>(positionFilterIt->second)
+                        ? std::get<IFilter<std::array<char, 32>>::Ptr>(positionFilterIt->second)
+                        : nullptr;
+                }
 
-            std::cout << "Filtered: " << result.size() << "\n";
+                IFilter<int>::Ptr ageFilter = nullptr;
+                auto ageFilterIt = filter.find("age");
+                if (ageFilterIt != filter.end())
+                {
+                    ageFilter = std::holds_alternative<IFilter<int>::Ptr>(ageFilterIt->second)
+                        ? std::get<IFilter<int>::Ptr>(ageFilterIt->second)
+                        : nullptr;
+                }
+
+                IFilter<float>::Ptr salaryFilter = nullptr;
+                auto salaryFilterIt = filter.find("salary");
+                if (salaryFilterIt != filter.end())
+                {
+                    salaryFilter = std::holds_alternative<IFilter<float>::Ptr>(salaryFilterIt->second)
+                        ? std::get<IFilter<float>::Ptr>(salaryFilterIt->second)
+                        : nullptr;
+                }
+
+                auto result = registry->filter(
+                    std::move(nameFilter),
+                    std::move(positionFilter),
+                    std::move(ageFilter),
+                    std::move(salaryFilter));
+
+                std::cout << "Filtered: " << result.size() << "\n";
+            });
         }
     }
+
+    group.wait();
 
     __itt_task_end(domain);
 

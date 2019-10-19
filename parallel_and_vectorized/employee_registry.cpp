@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sstream>
 
+#include <tbb/task_group.h>
+
 namespace filtering
 {
     class EmployeeRegistry : public IEmployeeRegistry
