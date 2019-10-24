@@ -6,6 +6,7 @@
 #include <array>
 #include <iostream>
 #include <functional>
+#include <immintrin.h>
 
 namespace filtering
 {
@@ -117,8 +118,9 @@ namespace filtering
 
         void match(const std::vector<std::array<char, 32>> &values, std::vector<char> &result) const override
         {
-            m_match(values, result, [this](const char *value)
+            m_match(values, result, [this](const char *value) -> bool
             {
+#if 0
                 bool result = true;
 #pragma ivdep
 #pragma vector always
@@ -131,6 +133,13 @@ namespace filtering
                 }
 
                 return result;
+#else
+                auto source  = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(value));
+                auto pattern = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(m_value));
+                auto result  = _mm256_xor_si256(source, pattern);
+
+                return _mm256_movemask_epi8(result) == 0;
+#endif
             });
         }
 
@@ -286,8 +295,7 @@ namespace filtering
             if constexpr (std::is_same<T, std::array<char, 32>>::value)
             {
                 throw std::invalid_argument("Less or equals filter is not supported for string type");
-            }
-            else
+            } else
             {
                 m_match(values, result, [this](auto value)
                 {
