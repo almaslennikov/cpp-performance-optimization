@@ -5,33 +5,47 @@
 #include <vector>
 #include <array>
 #include <iostream>
+#include <functional>
 
 namespace filtering
 {
     template<class T, class Filter>
-    void match(const std::vector<T>& values, std::vector<char>& result, Filter filter)
+    struct Match
     {
-        const int valuesSize = values.size();
+        constexpr Match() = default;
+
+        inline void operator()(const std::vector<T> &values, std::vector<char> &result, Filter filter) const
+        {
+            const int valuesSize = values.size();
 #pragma ivdep
 #pragma vector always
-        for (int i = 0; i < valuesSize; i++)
-        {
-            result[i] = result[i] & filter(values[i]);
+            for (int i = 0; i < valuesSize; i++)
+            {
+                result[i] = result[i] & filter(values[i]);
+            }
         }
-    }
+    };
 
     template<class Filter>
-    void match<std::array<char, 32>, Filter>(const std::vector<std::array<char, 32>>& values, std::vector<char>& result, Filter filter)
+    struct Match<std::array<char, 32>, Filter>
     {
-        const char* pValues = reinterpret_cast<const char*>(values.data());
-        int counter = 0;
-        const int valuesSize = values.size();
-        // Inner loop is already vectorized, no need for #pragma vector here
-        for (int i = 0; i < valuesSize * 32; i += 32, counter++)
+        constexpr Match() = default;
+
+        inline void operator()(const std::vector<std::array<char, 32>> &values,
+                               std::vector<char> &result,
+                               Filter filter) const
         {
-            result[counter] = result[counter] & filter(pValues + i);
+            const char *pValues   = reinterpret_cast<const char *>(values.data());
+            int        counter    = 0;
+            const int  valuesSize = values.size();
+
+            // Inner loop is already vectorized, no need for #pragma vector here
+            for (int i = 0; i < valuesSize * 32; i += 32, counter++)
+            {
+                result[counter] = result[counter] & filter(pValues + i);
+            }
         }
-    }
+    };
 
     template<class T>
     class IFilter
@@ -41,15 +55,16 @@ namespace filtering
 
         virtual ~IFilter() = default;
 
-        virtual void match(const std::vector<T>& values, std::vector<char>& result) const = 0;
+        virtual void match(const std::vector<T> &values, std::vector<char> &result) const = 0;
     };
 
     template<class T>
     class ISingleValueFilter : public IFilter<T>
     {
     public:
-        ISingleValueFilter(const T& value)
-            : IFilter(), m_value{ value } {}
+        explicit ISingleValueFilter(const T &value)
+                : IFilter<T>(), m_value{value}
+        {}
 
     protected:
         T m_value;
@@ -59,40 +74,50 @@ namespace filtering
     class ISingleValueFilter<std::array<char, 32>> : public IFilter<std::array<char, 32>>
     {
     public:
-        ISingleValueFilter(const std::array<char, 32>& value)
-            : IFilter(), m_array(value), m_value{ m_array.data() } {}
+        explicit ISingleValueFilter(const std::array<char, 32> &value)
+                : IFilter(), m_array(value), m_value{m_array.data()}
+        {}
 
     protected:
         const std::array<char, 32> m_array;
-        const char* m_value;
+        const char                 *m_value;
     };
 
     template<class T>
     class EqualsFilter final : public ISingleValueFilter<T>
     {
-    public:
-        EqualsFilter(const T& value)
-            : ISingleValueFilter(value) {}
+        using Comparator = std::function<bool(T)>;
 
-        void match(const std::vector<T>& values, std::vector<char>& result) const override
+    public:
+        explicit EqualsFilter(const T &value)
+                : ISingleValueFilter<T>(value)
+        {}
+
+        void match(const std::vector<T> &values, std::vector<char> &result) const override
         {
-            filtering::match(values, result, [this](auto value)
+            m_match(values, result, [this](auto value)
             {
-                return value == m_value;
+                return value == this->m_value;
             });
         }
+
+    private:
+        Match<T, Comparator> m_match;
     };
 
     template<>
     class EqualsFilter<std::array<char, 32>> final : public ISingleValueFilter<std::array<char, 32>>
     {
-    public:
-        EqualsFilter(const std::array<char, 32>& value)
-            : ISingleValueFilter(value) {}
+        using StringComparator = std::function<bool(const char *)>;
 
-        void match(const std::vector<std::array<char, 32>>& values, std::vector<char>& result) const override
+    public:
+        explicit EqualsFilter(const std::array<char, 32> &value)
+                : ISingleValueFilter(value)
+        {}
+
+        void match(const std::vector<std::array<char, 32>> &values, std::vector<char> &result) const override
         {
-            filtering::match(values, result, [this](auto value)
+            m_match(values, result, [this](const char *value)
             {
                 bool result = true;
 #pragma ivdep
@@ -108,34 +133,44 @@ namespace filtering
                 return result;
             });
         }
+
+    private:
+        Match<std::array<char, 32>, StringComparator> m_match{};
     };
 
     template<class T>
     class NotEqualsFilter final : public ISingleValueFilter<T>
     {
+        using Comparator = std::function<bool(T)>;
     public:
-        NotEqualsFilter(const T& value)
-            : ISingleValueFilter(value) {}
+        explicit NotEqualsFilter(const T &value)
+                : ISingleValueFilter<T>(value)
+        {}
 
-        void match(const std::vector<T>& values, std::vector<char>& result) const override
+        void match(const std::vector<T> &values, std::vector<char> &result) const override
         {
-            filtering::match(values, result, [this](auto value)
+            m_match(values, result, [this](auto value)
             {
-                return value != m_value;
+                return value != this->m_value;
             });
         }
+
+    private:
+        Match<T, Comparator> m_match;
     };
 
     template<>
     class NotEqualsFilter<std::array<char, 32>> final : public ISingleValueFilter<std::array<char, 32>>
     {
+        using StringComparator = std::function<bool(const char *)>;
     public:
-        NotEqualsFilter(const std::array<char, 32>& value)
-            : ISingleValueFilter(value) {}
+        explicit NotEqualsFilter(const std::array<char, 32> &value)
+                : ISingleValueFilter(value)
+        {}
 
-        void match(const std::vector<std::array<char, 32>>& values, std::vector<char>& result) const override
+        void match(const std::vector<std::array<char, 32>> &values, std::vector<char> &result) const override
         {
-            filtering::match(values, result, [this](auto value)
+            m_match(values, result, [this](const char *value)
             {
                 bool result = false;
 #pragma ivdep
@@ -151,70 +186,117 @@ namespace filtering
                 return result;
             });
         }
+
+    private:
+        Match<std::array<char, 32>, StringComparator> m_match;
     };
 
     template<class T>
     class GreaterFilter final : public ISingleValueFilter<T>
     {
+        using Comparator = std::function<bool(T)>;
     public:
-        GreaterFilter(const T& value)
-            : ISingleValueFilter(value) {}
+        explicit GreaterFilter(const T &value)
+                : ISingleValueFilter<T>(value)
+        {}
 
-        void match(const std::vector<T>& values, std::vector<char>& result) const override
+        void match(const std::vector<T> &values, std::vector<char> &result) const override
         {
-            filtering::match(values, result, [this](auto value)
+            if constexpr (std::is_same<T, std::array<char, 32>>::value)
             {
-                return value > m_value;
-            });
+                throw std::invalid_argument("Greater filter is not supported for string type");
+            } else
+            {
+                m_match(values, result, [this](auto value)
+                {
+                    return value > this->m_value;
+                });
+            }
         }
+
+    private:
+        Match<T, Comparator> m_match;
     };
 
     template<class T>
     class GreaterOrEqualsFilter final : public ISingleValueFilter<T>
     {
+        using Comparator = std::function<bool(T)>;
     public:
-        GreaterOrEqualsFilter(const T& value)
-            : ISingleValueFilter(value) {}
+        explicit GreaterOrEqualsFilter(const T &value)
+                : ISingleValueFilter<T>(value)
+        {}
 
-        void match(const std::vector<T>& values, std::vector<char>& result) const override
+        void match(const std::vector<T> &values, std::vector<char> &result) const override
         {
-            filtering::match(values, result, [this](auto value)
+            if constexpr (std::is_same<T, std::array<char, 32>>::value)
             {
-                return value >= m_value;
-            });
+                throw std::invalid_argument("Greater or equals filter is not supported for string type");
+            } else
+            {
+                m_match(values, result, [this](auto value)
+                {
+                    return value >= this->m_value;
+                });
+            }
         }
+
+    private:
+        Match<T, Comparator> m_match;
     };
 
     template<class T>
     class LessFilter final : public ISingleValueFilter<T>
     {
+        using Comparator = std::function<bool(T)>;
     public:
-        LessFilter(const T& value)
-            : ISingleValueFilter(value) {}
+        explicit LessFilter(const T &value)
+                : ISingleValueFilter<T>(value)
+        {}
 
-        void match(const std::vector<T>& values, std::vector<char>& result) const override
+        void match(const std::vector<T> &values, std::vector<char> &result) const override
         {
-            filtering::match(values, result, [this](auto value)
+            if constexpr (std::is_same<T, std::array<char, 32>>::value)
             {
-                return value < m_value;
-            });
+                throw std::invalid_argument("Less filter is not supported for string type");
+            } else
+            {
+                m_match(values, result, [this](auto value)
+                {
+                    return value < this->m_value;
+                });
+            }
         }
+
+    private:
+        Match<T, Comparator> m_match;
     };
 
     template<class T>
     class LessOrEqualsFilter final : public ISingleValueFilter<T>
     {
+        using Comparator = std::function<bool(T)>;
     public:
-        LessOrEqualsFilter(const T& value)
-            : ISingleValueFilter(value) {}
+        explicit LessOrEqualsFilter(const T &value)
+                : ISingleValueFilter<T>(value)
+        {}
 
-        void match(const std::vector<T>& values, std::vector<char>& result) const override
+        void match(const std::vector<T> &values, std::vector<char> &result) const override
         {
-            filtering::match(values, result, [this](auto value)
+            if constexpr (std::is_same<T, std::array<char, 32>>::value)
             {
-                return value <= m_value;
-            });
+                throw std::invalid_argument("Less or equals filter is not supported for string type");
+            }
+            else
+            {
+                m_match(values, result, [this](auto value)
+                {
+                    return value <= this->m_value;
+                });
+            }
         }
-    };
 
+    private:
+        Match<T, Comparator> m_match;
+    };
 }
