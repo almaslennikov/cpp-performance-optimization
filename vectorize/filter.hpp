@@ -49,7 +49,7 @@ namespace filtering
     {
     public:
         ISingleValueFilter(const T& value)
-            : IFilter(), m_value{ value } {}
+                : IFilter(), m_value{ value } {}
 
     protected:
         T m_value;
@@ -60,7 +60,7 @@ namespace filtering
     {
     public:
         ISingleValueFilter(const std::array<char, 32>& value)
-            : IFilter(), m_array(value), m_value{ m_array.data() } {}
+                : IFilter(), m_array(value), m_value{ m_array.data() } {}
 
     protected:
         const std::array<char, 32> m_array;
@@ -72,7 +72,7 @@ namespace filtering
     {
     public:
         EqualsFilter(const T& value)
-            : ISingleValueFilter(value) {}
+                : ISingleValueFilter(value) {}
 
         void match(const std::vector<T>& values, std::vector<char>& result) const override
         {
@@ -88,7 +88,7 @@ namespace filtering
     {
     public:
         EqualsFilter(const std::array<char, 32>& value)
-            : ISingleValueFilter(value) {}
+                : ISingleValueFilter(value) {}
 
         void match(const std::vector<std::array<char, 32>>& values, std::vector<char>& result) const override
         {
@@ -115,7 +115,7 @@ namespace filtering
     {
     public:
         NotEqualsFilter(const T& value)
-            : ISingleValueFilter(value) {}
+                : ISingleValueFilter(value) {}
 
         void match(const std::vector<T>& values, std::vector<char>& result) const override
         {
@@ -131,7 +131,7 @@ namespace filtering
     {
     public:
         NotEqualsFilter(const std::array<char, 32>& value)
-            : ISingleValueFilter(value) {}
+                : ISingleValueFilter(value) {}
 
         void match(const std::vector<std::array<char, 32>>& values, std::vector<char>& result) const override
         {
@@ -158,7 +158,7 @@ namespace filtering
     {
     public:
         GreaterFilter(const T& value)
-            : ISingleValueFilter(value) {}
+                : ISingleValueFilter(value) {}
 
         void match(const std::vector<T>& values, std::vector<char>& result) const override
         {
@@ -174,7 +174,7 @@ namespace filtering
     {
     public:
         GreaterOrEqualsFilter(const T& value)
-            : ISingleValueFilter(value) {}
+                : ISingleValueFilter(value) {}
 
         void match(const std::vector<T>& values, std::vector<char>& result) const override
         {
@@ -190,7 +190,7 @@ namespace filtering
     {
     public:
         LessFilter(const T& value)
-            : ISingleValueFilter(value) {}
+                : ISingleValueFilter(value) {}
 
         void match(const std::vector<T>& values, std::vector<char>& result) const override
         {
@@ -206,7 +206,7 @@ namespace filtering
     {
     public:
         LessOrEqualsFilter(const T& value)
-            : ISingleValueFilter(value) {}
+                : ISingleValueFilter(value) {}
 
         void match(const std::vector<T>& values, std::vector<char>& result) const override
         {
