@@ -18,9 +18,9 @@ namespace filtering
             {
 #if 0
                 m_match(values, result, [this](auto value)
-            {
-                return value == this->m_value;
-            });
+                {
+                    return value < this->m_value;
+                });
 #else
                 if constexpr (std::is_same<T, int>::value)
                 {
@@ -84,11 +84,13 @@ namespace filtering
                         auto source      = _mm256_loadu_ps(pSource + (i * 8));
                         auto destination = _mm256_loadu_si256(
                                 reinterpret_cast<const __m256i *>(pDestination + (i * 8)));
-                        auto resultMask  = _mm256_cmp_ps(source, pattern, 1);
+                        auto resultMask  = _mm256_srli_epi32(
+                                _mm256_cvtps_epi32(
+                                        _mm256_cmp_ps(source, pattern, 1)),
+                                31);
 
                         _mm256_storeu_si256(reinterpret_cast<__m256i *>(pDestination + (i * 8)),
-                                            _mm256_and_si256(_mm256_cvtps_epi32(resultMask),
-                                                             destination));
+                                            _mm256_and_si256(resultMask, destination));
                     }
 
                     // Remainder
