@@ -25,40 +25,61 @@ namespace filtering
                 if constexpr (std::is_same<T, float>::value)
                 {
                     auto sourceLength         = values.size();
-                    auto vectorizedIterations = sourceLength / 8;
-                    auto remainder            = sourceLength % 8;
+                    auto vectorizedIterations = sourceLength / 32;
+                    auto remainder            = sourceLength % 32;
 
                     const float *const pSource      = values.data();
                     int         *const pDestination = result.data();
 
-                    auto pattern = _mm256_set_ps(ISingleValueFilter<float>::m_value,
-                                                 ISingleValueFilter<float>::m_value,
-                                                 ISingleValueFilter<float>::m_value,
-                                                 ISingleValueFilter<float>::m_value,
-                                                 ISingleValueFilter<float>::m_value,
-                                                 ISingleValueFilter<float>::m_value,
-                                                 ISingleValueFilter<float>::m_value,
-                                                 ISingleValueFilter<float>::m_value);
+                    const auto pattern = _mm256_set_ps(ISingleValueFilter<float>::m_value,
+                                                       ISingleValueFilter<float>::m_value,
+                                                       ISingleValueFilter<float>::m_value,
+                                                       ISingleValueFilter<float>::m_value,
+                                                       ISingleValueFilter<float>::m_value,
+                                                       ISingleValueFilter<float>::m_value,
+                                                       ISingleValueFilter<float>::m_value,
+                                                       ISingleValueFilter<float>::m_value);
 
                     // Vectorized loop
                     for (uint32_t i = 0; i < vectorizedIterations; i++)
                     {
-                        auto source      = _mm256_loadu_ps(pSource + (i * 8));
-                        auto destination = _mm256_loadu_si256(
-                                reinterpret_cast<const __m256i *>(pDestination + (i * 8)));
-                        auto resultMask  = _mm256_srli_epi32(
-                                _mm256_cvtps_epi32(
-                                        _mm256_cmp_ps(source, pattern, 2)),
-                                31);
+                        auto source1 = _mm256_loadu_ps(pSource + (i * 32) + 0);
+                        auto source2 = _mm256_loadu_ps(pSource + (i * 32) + 8);
+                        auto source3 = _mm256_loadu_ps(pSource + (i * 32) + 16);
+                        auto source4 = _mm256_loadu_ps(pSource + (i * 32) + 24);
 
-                        _mm256_storeu_si256(reinterpret_cast<__m256i *>(pDestination + (i * 8)),
-                                            _mm256_and_si256(resultMask, destination));
+                        auto destination1 = _mm256_loadu_si256(
+                                reinterpret_cast<const __m256i *>(pDestination + (i * 32) + 0));
+                        auto destination2 = _mm256_loadu_si256(
+                                reinterpret_cast<const __m256i *>(pDestination + (i * 32) + 8));
+                        auto destination3 = _mm256_loadu_si256(
+                                reinterpret_cast<const __m256i *>(pDestination + (i * 32) + 16));
+                        auto destination4 = _mm256_loadu_si256(
+                                reinterpret_cast<const __m256i *>(pDestination + (i * 32) + 24));
+
+                        auto resultMask1 = _mm256_srli_epi32(_mm256_cvtps_epi32(_mm256_cmp_ps(source1, pattern, 2)),
+                                                             31);
+                        auto resultMask2 = _mm256_srli_epi32(_mm256_cvtps_epi32(_mm256_cmp_ps(source2, pattern, 2)),
+                                                             31);
+                        auto resultMask3 = _mm256_srli_epi32(_mm256_cvtps_epi32(_mm256_cmp_ps(source3, pattern, 2)),
+                                                             31);
+                        auto resultMask4 = _mm256_srli_epi32(_mm256_cvtps_epi32(_mm256_cmp_ps(source4, pattern, 2)),
+                                                             31);
+
+                        _mm256_storeu_si256(reinterpret_cast<__m256i *>(pDestination + (i * 32) + 0),
+                                            _mm256_and_si256(resultMask1, destination1));
+                        _mm256_storeu_si256(reinterpret_cast<__m256i *>(pDestination + (i * 32) + 8),
+                                            _mm256_and_si256(resultMask2, destination2));
+                        _mm256_storeu_si256(reinterpret_cast<__m256i *>(pDestination + (i * 32) + 16),
+                                            _mm256_and_si256(resultMask3, destination3));
+                        _mm256_storeu_si256(reinterpret_cast<__m256i *>(pDestination + (i * 32) + 24),
+                                            _mm256_and_si256(resultMask4, destination4));
                     }
 
                     // Remainder
                     if (remainder)
                     {
-                        for (int i = vectorizedIterations * 8; i < sourceLength; i++)
+                        for (int i = vectorizedIterations * 32; i < sourceLength; i++)
                         {
                             pDestination[i] = pDestination[i] & (pSource[i] <= ISingleValueFilter<float>::m_value);
                         }
