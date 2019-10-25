@@ -1,0 +1,9 @@
+"name",==Alexander,"salary",<=250000
+"name",!=Mark,"position",!=Manager,"salary",>250000
+"name",==Alice,"position",==Security,"age",>30,"salary",<100000
+"position",==Janitor,"age",<25,"salary",>=150000
+"name",!=Bob,"age",>35
+"age",>45,"salary",<300000
+"position",==Intern,"age",>23
+"position",==HR
+"name",!=Jake,"age",<34
